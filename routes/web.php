@@ -9,3 +9,4 @@ Route::get('/', function () {
 
 Route::resource('depenses', DepenseController::class);
 
+Route::post('/categories', [App\Http\Controllers\CategorieController::class, 'store'])->name('categories.store');

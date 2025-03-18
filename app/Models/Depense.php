@@ -2,24 +2,24 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Depense extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
         'date',
         'nom_entreprise',
         'description',
         'montant',
-        'category_id'
+        'categorie_id'
     ];
 
     protected $casts = [
         'date' => 'date',
-        'montant' => 'decimal:2',
     ];
+
+    public function categorie()
+    {
+        return $this->belongsTo(Categorie::class);
+    }
 }

@@ -2,20 +2,40 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Categorie;
 use App\Models\Depense;
 use Illuminate\Http\Request;
 
 class DepenseController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $depenses = Depense::latest()->paginate(10);
-        return view('depenses.index', compact('depenses'));
+        $sort = $request->query('sort');
+        $direction = $request->query('direction', 'asc');
+
+        $depensesQuery = Depense::query();
+
+        if ($sort === 'categorie') {
+            $depensesQuery->join('categories', 'depenses.categorie_id', '=', 'categories.id')
+                ->orderBy('categories.nom', $direction)
+                ->select('depenses.*');
+        } elseif ($sort === 'date') {
+            $depensesQuery->orderBy('date', $direction);
+        } else {
+            $depensesQuery->orderBy('date', 'desc');
+        }
+
+        $depenses = $depensesQuery->get();
+        $categories = Categorie::orderBy('nom')->get();
+
+        return view('depenses.index', compact('depenses', 'categories'));
     }
 
     public function create()
     {
-        return view('depenses.create');
+        $categories = Categorie::orderBy('nom')->get();
+        return view('depenses.create', compact('categories'));
+
     }
 
     public function store(Request $request)
@@ -25,6 +45,7 @@ class DepenseController extends Controller
             'nom_entreprise' => 'required|string|max:255',
             'description' => 'required|string',
             'montant' => 'required|numeric|min:0',
+            'categorie_id' => 'nullable|exists:categories,id',
         ]);
 
         Depense::create($validated);
@@ -39,7 +60,8 @@ class DepenseController extends Controller
 
     public function edit(Depense $depense)
     {
-        return view('depenses.edit', compact('depense'));
+        $categories = Categorie::orderBy('nom')->get();
+        return view('depenses.edit', compact('depense', 'categories'));
     }
 
     public function update(Request $request, Depense $depense)
