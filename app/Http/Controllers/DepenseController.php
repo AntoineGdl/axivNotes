@@ -5,7 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Categorie;
 use App\Models\Depense;
 use Illuminate\Http\Request;
-
+use App\Exports\DepensesExport;
+use Maatwebsite\Excel\Facades\Excel;
 class DepenseController extends Controller
 {
     public function index(Request $request)
@@ -28,7 +29,20 @@ class DepenseController extends Controller
         $depenses = $depensesQuery->get();
         $categories = Categorie::orderBy('nom')->get();
 
-        return view('depenses.index', compact('depenses', 'categories'));
+        // Calculate monthly totals
+        $monthlyTotals = $depenses->groupBy(function($depense) {
+            return $depense->date->format('Y-m');
+        })->map(function($group) {
+            return [
+                'month' => $group->first()->date->format('F Y'),
+                'total' => $group->sum('montant')
+            ];
+        })->values();
+
+        // Calculate grand total
+        $grandTotal = $depenses->sum('montant');
+
+        return view('depenses.index', compact('depenses', 'categories', 'monthlyTotals', 'grandTotal'));
     }
 
     public function create()
@@ -83,5 +97,41 @@ class DepenseController extends Controller
         $depense->delete();
 
         return redirect()->route('depenses.index')->with('success', 'Dépense supprimée avec succès.');
+    }
+
+    public function export(Request $request)
+    {
+        $sort = $request->query('sort');
+        $direction = $request->query('direction', 'asc');
+
+        $depensesQuery = Depense::query();
+
+        if ($sort === 'categorie') {
+            $depensesQuery->join('categories', 'depenses.categorie_id', '=', 'categories.id')
+                ->orderBy('categories.nom', $direction)
+                ->select('depenses.*');
+        } elseif ($sort === 'date') {
+            $depensesQuery->orderBy('date', $direction);
+        } else {
+            $depensesQuery->orderBy('date', 'desc');
+        }
+
+        $depenses = $depensesQuery->get();
+
+        // Calculate monthly totals
+        $monthlyTotals = $depenses->groupBy(function($depense) {
+            return $depense->date->format('Y-m');
+        })->map(function($group) {
+            return [
+                'month' => $group->first()->date->format('F Y'),
+                'total' => $group->sum('montant')
+            ];
+        })->values();
+
+        // Calculate grand total
+        $grandTotal = $depenses->sum('montant');
+
+        return Excel::download(new DepensesExport($depenses, $monthlyTotals, $grandTotal),
+            'depenses_' . now()->format('Y-m-d') . '.xlsx');
     }
 }

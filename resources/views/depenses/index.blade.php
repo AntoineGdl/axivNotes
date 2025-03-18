@@ -15,6 +15,9 @@
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h4>Liste des dépenses</h4>
                     <a href="{{ route('depenses.create') }}" class="btn btn-success">Ajouter une dépense</a>
+                        <a href="{{ route('depenses.export', request()->query()) }}" class="btn btn-info me-2">
+                            <i class="bi bi-file-earmark-excel"></i> Exporter Excel
+                        </a>
                 </div>
 
                 <div class="card-body">
@@ -109,12 +112,41 @@
                             </tbody>
                         </table>
                     </div>
-
-
                 </div>
             </div>
         </div>
+
+        <!-- Summary Table -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h4>Résumé des dépenses</h4>
+            </div>
+            <div class="card-body">
+                <table class="table table-striped">
+                    <thead>
+                    <tr>
+                        <th>Mois</th>
+                        <th class="text-end">Total (€)</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @foreach($monthlyTotals as $monthData)
+                        <tr>
+                            <td>{{ $monthData['month'] }}</td>
+                            <td class="text-end">{{ number_format($monthData['total'], 2, ',', ' ') }} €</td>
+                        </tr>
+                    @endforeach
+                    </tbody>
+                    <tfoot>
+                    <tr class="fw-bold">
+                        <td>Total général</td>
+                        <td class="text-end">{{ number_format($grandTotal, 2, ',', ' ') }} €</td>
+                    </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
     </div>
-</div>
+    </div>
 </body>
 </html>
